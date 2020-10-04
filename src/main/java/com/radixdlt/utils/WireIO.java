@@ -17,9 +17,9 @@
 
 package com.radixdlt.utils;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.Hash;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -92,8 +92,8 @@ public final class WireIO {
 			return b;
 		}
 
-		public Hash readHash() throws IOException {
-			return new Hash(readBytes(32));
+		public HashCode readHash() throws IOException {
+			return HashCode.fromBytes(readBytes(32));
 		}
 
 		public byte[] readVarBytes() throws IOException {
@@ -205,8 +205,8 @@ public final class WireIO {
 			writeBytes(aid.getBytes());
 		}
 
-		public void writeHash(Hash h) throws IOException {
-			writeBytes(h.toByteArray());
+		public void writeHash(HashCode h) throws IOException {
+			writeBytes(h.asBytes());
 		}
 
 		public void writeString(String s) throws IOException {

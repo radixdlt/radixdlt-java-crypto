@@ -31,9 +31,10 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -44,6 +45,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * A Jackson {@link RadixObjectMapperConfigurator} that will serialize and deserialize
@@ -64,11 +66,13 @@ public class JacksonJsonMapper extends ObjectMapper {
 	 * 		sorted in lexicographical order
 	 * @return A freshly created {@link JacksonJsonMapper}
 	 */
-	public static JacksonJsonMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
-		return new JacksonJsonMapper(idLookup, filterProvider, sortProperties);
+	public static JacksonJsonMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties,
+										   Optional<BeanSerializerModifier> serializationModifier) {
+		return new JacksonJsonMapper(idLookup, filterProvider, sortProperties, serializationModifier);
 	}
 
-	private JacksonJsonMapper(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+	private JacksonJsonMapper(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties,
+							  Optional<BeanSerializerModifier> serializationModifier) {
 		super(new JsonFactory());
 		RadixObjectMapperConfigurator.configure(this, idLookup, filterProvider, sortProperties);
 		SimpleModule jsonModule = new SimpleModule();
@@ -77,7 +81,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 				JacksonCodecConstants.EUID_STR_VALUE,
 				EUID::toString
 		));
-		jsonModule.addSerializer(Hash.class, new JacksonJsonHashSerializer());
+		jsonModule.addSerializer(HashCode.class, new JacksonJsonHashCodeSerializer());
 		jsonModule.addSerializer(byte[].class, new JacksonJsonBytesSerializer());
 		jsonModule.addSerializer(String.class, new JacksonJsonStringSerializer());
 		jsonModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
@@ -119,7 +123,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 				JacksonCodecConstants.EUID_STR_VALUE,
 				EUID::new
 		));
-		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
+		jsonModule.addDeserializer(HashCode.class, new JacksonJsonHashCodeDeserializer());
 		jsonModule.addDeserializer(byte[].class, new JacksonJsonBytesDeserializer());
 		jsonModule.addDeserializer(String.class, new JacksonJsonStringDeserializer());
 		jsonModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
@@ -184,6 +188,8 @@ public class JacksonJsonMapper extends ObjectMapper {
 				};
 			}
 		});
+
+		serializationModifier.ifPresent(jsonModule::setSerializerModifier);
 
 		registerModule(jsonModule);
 	}
